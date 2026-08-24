@@ -25,24 +25,27 @@
   --shadow-mid:  0 12px 36px rgba(75,167,202,.18), 0 4px 12px rgba(255,182,193,.15);
   --shadow-pop:  0 18px 50px rgba(75,167,202,.25), 0 6px 18px rgba(255,182,193,.25);
 
-  --font: "LXGW WenKai TC","LXGW WenKai","霞鹜文楷","PingFang SC","Hiragino Sans GB","Microsoft YaHei", system-ui, -apple-system, BlinkMacSystemFont, sans-serif, "Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji";
-  --font-script: "Long Cang","Pacifico","Caveat","Bradley Hand","Snell Roundhand","Comic Sans MS", cursive;
-  --font-display: "Long Cang","Caveat","LXGW WenKai TC","PingFang SC", cursive;
+  --font: "LXGW WenKai TC","LXGW WenKai","霞鹜文楷 TC","霞鹜文楷","Long Cang","Caveat","PingFang SC","Hiragino Sans GB","Microsoft YaHei", system-ui, -apple-system, BlinkMacSystemFont, sans-serif, "Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji";
+  --font-script: "LXGW WenKai TC","LXGW WenKai","霞鹜文楷","Long Cang","Caveat","Bradley Hand","Snell Roundhand","Comic Sans MS", cursive;
+  --font-display: "LXGW WenKai TC","LXGW WenKai","霞鹜文楷","Long Cang","Caveat","PingFang SC", cursive;
+  --font-en: "Caveat","LXGW WenKai TC","霞鹜文楷","Pacifico", cursive;
+  --font-num: "Caveat","LXGW WenKai TC","霞鹜文楷", cursive;
 }
 
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
 html,body{margin:0;padding:0;background:#fff;}
 body{
-  font-family:var(--font);
+  font-family: var(--font);
   color:var(--c-ink);
-  line-height:1.55;
-  font-size:15px;
+  line-height:1.7;
+  font-size:16px;
   overflow-x:hidden;
   min-height:100vh;
   min-height:100dvh;
   background: linear-gradient(180deg, #f4faff 0%, #fff5f7 100%);
   -webkit-font-smoothing:antialiased;
   text-rendering:optimizeLegibility;
+  letter-spacing:0.5px;
 }
 
 /* ============================================
@@ -232,7 +235,8 @@ body{
 }
 .search-box input{
   flex:1;border:0;outline:0;background:transparent;
-  font-family:inherit;font-size:15px;color:var(--c-ink);
+  font-family:var(--font);font-size:16px;color:var(--c-ink);
+  letter-spacing:0.5px;
 }
 .search-box .lens{font-size:18px;}
 .search-box input::placeholder{color:var(--c-ink-soft);}
@@ -276,7 +280,8 @@ body{
   margin-bottom:2px;
 }
 .cat-card .name{
-  font-weight:800;font-size:15px;color:var(--c-ink);
+  font-family:var(--font);font-weight:400;font-size:17px;color:var(--c-ink);
+  letter-spacing:1px;
 }
 .cat-card .count{
   font-size:11px;color:var(--c-blue-deep);
@@ -355,8 +360,8 @@ body{
 }
 .recipe-card .thumb img{width:100%;height:100%;object-fit:cover;}
 .recipe-card .body{flex:1;min-width:0;}
-.recipe-card .title{font-weight:800;color:var(--c-ink);font-size:16px;margin:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
-.recipe-card .sub{font-size:12px;color:var(--c-ink-soft);margin-top:3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.recipe-card .title{font-family:var(--font);font-weight:400;color:var(--c-ink);font-size:17px;margin:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;letter-spacing:0.5px;}
+.recipe-card .sub{font-family:var(--font);font-size:13px;color:var(--c-ink-soft);margin-top:3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;letter-spacing:0.5px;}
 .recipe-card .badge{
   display:inline-flex;align-items:center;gap:3px;
   font-size:11px;
@@ -486,20 +491,21 @@ body{
   display:flex;align-items:center;justify-content:center;
   box-shadow:0 4px 10px rgba(75,167,202,.35);
 }
-.step .text{flex:1;color:var(--c-ink);font-size:15px;line-height:1.6;}
+.step .text{flex:1;color:var(--c-ink);font-family:var(--font);font-size:16px;line-height:1.8;letter-spacing:0.5px;}
 
 /* 编辑表单 */
 .form-grid{display:flex;flex-direction:column;gap:12px;}
 .field{display:flex;flex-direction:column;gap:6px;}
 .field label{font-size:13px;font-weight:700;color:var(--c-blue-deep);}
 .field input, .field textarea, .field select{
-  font-family:inherit;font-size:15px;color:var(--c-ink);
+  font-family:var(--font);font-size:16px;color:var(--c-ink);
   background:rgba(255,255,255,.95);
   border:2px solid var(--c-blue-light);
   border-radius:var(--r-sm);
   padding:11px 14px;
   outline:0;
   transition:border-color .2s, box-shadow .2s;
+  letter-spacing:0.5px;
 }
 .field input:focus, .field textarea:focus, .field select:focus{
   border-color:var(--c-blue);
@@ -516,7 +522,7 @@ body{
   padding:8px;border-radius:var(--r-sm);
   border:1px solid rgba(75,167,202,.15);
 }
-.list-edit-row input{flex:1;border:none;outline:0;background:transparent;font-family:inherit;font-size:14px;padding:6px;}
+.list-edit-row input{flex:1;border:none;outline:0;background:transparent;font-family:var(--font);font-size:16px;padding:6px;letter-spacing:0.5px;}
 .list-edit-row .x{
   background:#ffe4e9;color:#c0394d;border:none;cursor:pointer;
   width:30px;height:30px;border-radius:50%;
@@ -524,7 +530,9 @@ body{
 }
 .add-line{
   background:transparent;border:2px dashed var(--c-blue-light);color:var(--c-blue-deep);
-  border-radius:var(--r-sm);padding:10px;font-family:inherit;cursor:pointer;font-weight:600;
+  border-radius:var(--r-sm);padding:11px;
+  font-family:var(--font);cursor:pointer;font-weight:400;font-size:15px;
+  letter-spacing:1px;
 }
 
 /* 操作工具条 */
@@ -561,8 +569,11 @@ body{
   padding:14px;border-radius:var(--r-md);
   background:linear-gradient(160deg, #f4faff, #fff5f7);
   border:1px solid rgba(75,167,202,.10);
-  cursor:pointer;font-family:inherit;font-size:15px;color:var(--c-ink);font-weight:600;
+  cursor:pointer;
+  font-family:var(--font);
+  font-size:16px;color:var(--c-ink);font-weight:400;
   text-align:left;
+  letter-spacing:0.5px;
 }
 .sheet .opt-btn .ic{
   width:42px;height:42px;border-radius:50%;
