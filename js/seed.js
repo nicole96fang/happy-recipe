@@ -158,18 +158,38 @@
     }
   ];
 
+  // localStorage 标记：一旦用户在 app 里有过任意一条数据（包括示例），就不再自动种
+  // 这样在极端情况下（IndexedDB 被 iOS 清掉、用户清缓存、备份恢复后空数据库），
+  // 删除的食谱也不会"复活"，保持用户当前意图
+  const SEED_DONE_KEY = 'happy_recipe.seeded';
+
   async function seedIfEmpty(){
     try{
+      // 关键：用户曾经有过数据 → 永远不再种示例，避免删了的食谱"复活"
+      if(localStorage.getItem(SEED_DONE_KEY) === '1') return;
+
       const list = await DB.getAllRecipes();
       if(list && list.length===0){
         for(const s of SAMPLES){
           await DB.saveRecipe({ ...s });
         }
+        localStorage.setItem(SEED_DONE_KEY, '1');
+      } else if(list && list.length > 0){
+        // 已经手动加了数据 / 恢复了备份 → 也标记为 done
+        localStorage.setItem(SEED_DONE_KEY, '1');
       }
     }catch(e){
       console.warn('seed failed', e);
     }
   }
 
-  window.Seed = { seedIfEmpty, SAMPLES };
+  // 暴露：手动重新种子（仅开发/重置用，正常代码不应调用）
+  async function forceReseed(){
+    const list = await DB.getAllRecipes();
+    for(const r of list){ await DB.deleteRecipe(r.id); }
+    for(const s of SAMPLES){ await DB.saveRecipe({ ...s }); }
+    try{ localStorage.setItem(SEED_DONE_KEY, '1'); }catch(e){}
+  }
+
+  window.Seed = { seedIfEmpty, forceReseed, SAMPLES };
 })();

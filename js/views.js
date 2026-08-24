@@ -658,6 +658,7 @@
         <button class="opt-btn" data-act="backup"><div class="ic">📦</div><div><div style="font-weight:800;">一键备份全部食谱</div><div style="font-size:12px;color:var(--c-ink-soft);">包含所有照片和收藏</div></div></button>
         <button class="opt-btn" data-act="restore"><div class="ic">📥</div><div><div style="font-weight:800;">从备份恢复</div><div style="font-size:12px;color:var(--c-ink-soft);">上传之前导出的 JSON</div></div></button>
         <button class="opt-btn danger" data-act="wipe"><div class="ic">🧹</div><div><div style="font-weight:800;">清空全部数据</div><div style="font-size:12px;color:#c0394d;">谨慎使用，建议先备份</div></div></button>
+        <button class="opt-btn" data-act="reseed"><div class="ic">🌱</div><div><div style="font-weight:800;">恢复示例食谱</div><div style="font-size:12px;color:var(--c-ink-soft);">把 6 道示例食谱加回来</div></div></button>
         <button class="opt-btn" data-act="stats"><div class="ic">📊</div><div><div style="font-weight:800;">查看存储信息</div><div style="font-size:12px;color:var(--c-ink-soft);">食谱数量、占用空间</div></div></button>
       </div>
     `, async (root)=>{
@@ -674,6 +675,13 @@
         const all = await DB.getAllRecipes();
         for(const r of all){ await DB.deleteRecipe(r.id); }
         closeSheet(); toast('已清空');
+        window.U.go('home');
+      };
+      root.querySelector('[data-act="reseed"]').onclick = async ()=>{
+        if(!confirm('把 6 道示例食谱加到你的食谱列表中？')) return;
+        closeSheet();
+        await window.Seed.forceReseed();
+        toast('已恢复示例食谱 🌱');
         window.U.go('home');
       };
       root.querySelector('[data-act="stats"]').onclick = async ()=>{
