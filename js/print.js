@@ -1,9 +1,11 @@
 /* ============================================
-   打印 (A4)
+   打印 (A4) - iOS 友好方案 v3
    策略：
-   1) 在主页面渲染一个全屏预览 modal（直接复用主页 window.print）
-   2) 照片全部转 data: URL（不依赖 blob: URL 跨上下文）
-   3) 模态框 .print-modal-body 内用 print- 前缀的类名，避免污染主页面样式
+   1) 屏幕模式：print-root 是一个 inline preview div，显示完整内容
+      + 顶部一个工具栏（🖨️打印 / ✕关闭）
+   2) 打印模式：隐藏工具栏，隐藏主页其他内容
+   3) 直接调顶层 window.print() → iOS AirPrint
+   4) iOS PDF 引擎读的是 print-root 当前 DOM（不是隐藏的）
    ============================================ */
 (function(){
 
@@ -17,7 +19,6 @@
     });
   }
 
-  // 根据照片数选列数
   function pickColumns(n){
     if(n <= 1) return 1;
     if(n <= 4) return 2;
@@ -25,7 +26,6 @@
     return 4;
   }
 
-  // 渲染所有照片为 <div class="print-photo-grid print-nX">
   function renderPhotosHTML(photoData){
     if(!photoData || !photoData.length) return '';
     const total = photoData.length;
@@ -43,7 +43,6 @@
     }).join('');
   }
 
-  // 构造打印 HTML
   async function buildPrintHTML(r){
     const photos = await DB.getPhotosForRecipe(r.id);
     const cat = window.U.getCategory(r.category);
@@ -104,225 +103,233 @@
 </div>`;
   }
 
-  // 全部 print-* 类样式（仅作用于 .print-modal 内）
-  const PRINT_CSS = `
-  .print-modal-back{
-    position: fixed; inset: 0; z-index: 99999;
-    background: rgba(0,0,0,.55);
-    display: flex; flex-direction: column;
-    align-items: center; justify-content: center;
-  }
-  .print-modal{
-    width: 96%; max-width: 720px; height: 92vh;
-    background: #fff; border-radius: 18px; overflow: hidden;
-    display: flex; flex-direction: column;
-    box-shadow: 0 20px 60px rgba(0,0,0,.4);
-  }
-  .print-modal-bar{
-    display: flex; align-items: center; gap: 10px;
-    padding: 12px 16px;
-    background: linear-gradient(135deg, #4ba7ca, #ffb6c1);
-    color: #fff;
-  }
-  .print-modal-bar .pm-title{
-    flex: 1; text-align: center; font-weight: 700; font-size: 15px;
-    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-  }
-  .pm-btn{
-    border: none; padding: 9px 16px; border-radius: 999px;
-    cursor: pointer; font-family: inherit; font-size: 14px; font-weight: 700;
-  }
-  .pm-cancel{ background: rgba(255,255,255,.2); color: #fff; }
-  .pm-print{ background: #fff; color: #3d8fa8; }
-  .print-modal-body{
-    flex: 1; overflow: auto; padding: 20px; background: #e8eef3;
-  }
-  .print-modal-body .print-sheet{
-    margin: 0 auto; max-width: 720px;
-    box-shadow: 0 8px 32px rgba(0,0,0,.15);
-  }
-
-  /* === 打印内容样式 === */
-  .print-sheet{
-    width: 100%;
-    border: 2px dashed #4ba7ca;
-    border-radius: 22px;
-    padding: 22px 26px;
-    background: linear-gradient(180deg, #f4faff 0%, #fff7f9 100%);
-    font-family: "LXGW WenKai TC","LXGW WenKai","霞鹜文楷","PingFang SC","Microsoft YaHei", sans-serif;
-    color: #2d4a5a;
-    box-sizing: border-box;
-  }
-  .print-photo-group{ margin-bottom: 12px; page-break-inside: avoid; break-inside: avoid; }
-  .print-photo-grid{ display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
-  .print-photo-grid.print-n1{ grid-template-columns: 1fr; }
-  .print-photo-grid.print-n2{ grid-template-columns: repeat(2, 1fr); }
-  .print-photo-grid.print-n3{ grid-template-columns: repeat(3, 1fr); }
-  .print-photo-grid.print-n4{ grid-template-columns: repeat(4, 1fr); }
-  .print-photo-grid.print-n5{ grid-template-columns: repeat(5, 1fr); }
-  .print-photo-grid.print-n6{ grid-template-columns: repeat(6, 1fr); }
-  .print-photo{
-    width: 100%; aspect-ratio: 1/1; border-radius: 14px; overflow: hidden;
-    background: #fff; box-shadow: 0 4px 14px rgba(75,167,202,.18);
-  }
-  .print-photo img{ width: 100%; height: 100%; object-fit: cover; display: block; }
-
-  .print-title-block{ text-align: center; margin-bottom: 12px; }
-  .print-title-block h2{
-    margin: 8px 0 6px; font-size: 26px; color: #3d8fa8;
-    font-weight: 400; letter-spacing: 1px;
-  }
-  .print-meta-line{ text-align: center; font-size: 13px; color: #5a7384; }
-  .print-chip{
-    display: inline-block; background: rgba(75,167,202,.10); color: #3d8fa8;
-    padding: 3px 10px; border-radius: 999px; margin: 2px;
-  }
-  .print-chip.pink{ background: rgba(255,182,193,.22); color: #c14d63; }
-
-  .print-section{
-    margin-top: 16px; padding: 14px 16px; border-radius: 18px;
-    background: rgba(255,255,255,.95); border: 1px solid #d9eef5;
-    page-break-inside: avoid; break-inside: avoid;
-  }
-  .print-section h3{
-    margin: 0 0 10px; color: #3d8fa8; font-size: 18px; font-weight: 400;
-    padding-left: 10px; border-left: 5px solid #4ba7ca; letter-spacing: 1px;
-  }
-  .print-ing-grid{ display: grid; grid-template-columns: 1fr 1fr; gap: 6px 16px; }
-  .print-ing{
-    display: flex; align-items: center; gap: 8px; padding: 5px 0;
-    border-bottom: 1px dashed #d9eef5; font-size: 13px;
-  }
-  .print-ing:last-child{ border-bottom: none; }
-  .print-ing-dot{
-    width: 14px; height: 14px; border-radius: 50%;
-    background: linear-gradient(135deg, #ffb6c1, #ff8fa3);
-    flex-shrink: 0;
-  }
-  .print-ing-nm{ flex: 1; font-weight: 600; }
-  .print-ing-qt{ color: #3d8fa8; font-size: 12px; }
-
-  .print-step{
-    display: flex; gap: 10px; align-items: flex-start;
-    padding: 8px 0; border-bottom: 1px dashed #d9eef5;
-  }
-  .print-step:last-child{ border-bottom: none; }
-  .print-step-n{
-    width: 26px; height: 26px; border-radius: 50%;
-    background: linear-gradient(135deg, #4ba7ca, #3d8fa8);
-    color: #fff; font-weight: 400; font-size: 16px;
-    display: flex; align-items: center; justify-content: center;
-    flex-shrink: 0;
-  }
-  .print-step-t{ flex: 1; font-size: 13px; line-height: 1.7; color: #2d4a5a; }
-
-  .print-notes{
-    background: linear-gradient(160deg, #fff8f1, #fff0f5);
-    border-radius: 14px; padding: 12px 14px;
-    font-size: 13px; line-height: 1.7; color: #2d4a5a;
-    margin-top: 14px; page-break-inside: avoid;
-  }
-  .print-footer{
-    margin-top: 18px; text-align: center; color: #5a7384; font-size: 11px;
-    border-top: 2px dashed #bfe2ec; padding-top: 10px;
-  }
-  .print-brand{
-    font-family: "Caveat","Long Cang","LXGW WenKai TC", cursive;
-    font-size: 18px; color: #c14d63;
-  }
-
-  /* === 打印时：去掉 modal 框架，只留 print-sheet === */
-  @media print {
-    body { background: #fff !important; }
-    .print-modal-back{ background: #fff !important; position: static !important; }
-    .print-modal{
-      width: 100% !important; max-width: none !important; height: auto !important;
-      box-shadow: none !important; border-radius: 0 !important;
-    }
-    .print-modal-bar{ display: none !important; }
-    .print-modal-body{ padding: 0 !important; background: #fff !important; overflow: visible !important; }
-    .print-modal-body .print-sheet{
-      max-width: none !important; box-shadow: none !important;
-      border: none !important; border-radius: 0 !important;
-    }
-    @page { size: A4; margin: 14mm; }
-  }
-  `;
-
-  // 等待所有图片加载完成
-  function waitForImagesIn(root){
-    return new Promise(resolve=>{
-      try{
-        const imgs = Array.from((root || document).querySelectorAll ? (root || document).querySelectorAll('img') : []);
-        if(imgs.length === 0){ resolve(); return; }
-        let pending = imgs.length;
-        let done = false;
-        const finish = ()=>{ if(!done){ done = true; resolve(); } };
-        const tick = ()=>{ if(--pending <= 0) finish(); };
-        imgs.forEach(img=>{
-          if(img.complete && img.naturalWidth>0){ tick(); return; }
-          img.addEventListener('load', tick, { once:true });
-          img.addEventListener('error', tick, { once:true });
-        });
-        setTimeout(finish, 10000);
-      }catch(e){ resolve(); }
-    });
-  }
-
-  // 注入 modal 样式
   function ensureStyle(){
-    if(document.getElementById('print-modal-style')) return;
+    if(document.getElementById('print-style')) return;
     const s = document.createElement('style');
-    s.id = 'print-modal-style';
-    s.textContent = PRINT_CSS;
+    s.id = 'print-style';
+    s.textContent = `
+      /* === 屏幕模式 === */
+      #print-root{
+        position: fixed;
+        top: 0; left: 0; right: 0; bottom: 0;
+        background: rgba(0,0,0,.55);
+        z-index: 9999;
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+        padding: 16px;
+        animation: printRootIn .2s ease;
+      }
+      @keyframes printRootIn{ from{opacity:0;} to{opacity:1;} }
+      .print-toolbar{
+        position: sticky;
+        top: 0;
+        z-index: 10;
+        display: flex; align-items: center; gap: 10px;
+        padding: 10px 12px;
+        background: linear-gradient(135deg, #4ba7ca, #ffb6c1);
+        color: #fff;
+        border-radius: 14px;
+        margin-bottom: 12px;
+        box-shadow: 0 6px 20px rgba(0,0,0,.18);
+      }
+      .print-toolbar .pt-title{
+        flex: 1; text-align: center; font-weight: 700; font-size: 14px;
+        overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+      }
+      .pt-btn{
+        border: none; padding: 8px 14px; border-radius: 999px;
+        cursor: pointer; font-family: inherit; font-size: 14px; font-weight: 700;
+      }
+      .pt-close{ background: rgba(255,255,255,.2); color: #fff; }
+      .pt-print{ background: #fff; color: #3d8fa8; }
+      #print-root .print-sheet{
+        max-width: 720px; margin: 0 auto;
+        box-shadow: 0 12px 40px rgba(0,0,0,.3);
+      }
+
+      /* === 打印时 === */
+      @media print {
+        /* 加在 body 上的 class，控制全屏隐藏所有非打印内容 */
+        body.printing > *:not(#print-root){ display: none !important; }
+        body.printing{ background: #fff !important; }
+        #print-root{
+          position: static !important;
+          background: #fff !important;
+          padding: 0 !important;
+          overflow: visible !important;
+        }
+        .print-toolbar{ display: none !important; }
+        #print-root .print-sheet{
+          max-width: none !important; margin: 0 !important;
+          box-shadow: none !important;
+        }
+        @page { size: A4; margin: 14mm; }
+      }
+
+      /* === 打印内容样式（与 modal 版一致）=== */
+      .print-sheet{
+        width: 100%;
+        border: 2px dashed #4ba7ca;
+        border-radius: 22px;
+        padding: 22px 26px;
+        background: linear-gradient(180deg, #f4faff 0%, #fff7f9 100%);
+        font-family: "LXGW WenKai TC","LXGW WenKai","霞鹜文楷","PingFang SC","Microsoft YaHei", sans-serif;
+        color: #2d4a5a;
+        box-sizing: border-box;
+      }
+      .print-photo-group{ margin-bottom: 12px; page-break-inside: avoid; break-inside: avoid; }
+      .print-photo-grid{ display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
+      .print-photo-grid.print-n1{ grid-template-columns: 1fr; }
+      .print-photo-grid.print-n2{ grid-template-columns: repeat(2, 1fr); }
+      .print-photo-grid.print-n3{ grid-template-columns: repeat(3, 1fr); }
+      .print-photo-grid.print-n4{ grid-template-columns: repeat(4, 1fr); }
+      .print-photo-grid.print-n5{ grid-template-columns: repeat(5, 1fr); }
+      .print-photo-grid.print-n6{ grid-template-columns: repeat(6, 1fr); }
+      .print-photo{
+        width: 100%; aspect-ratio: 1/1; border-radius: 14px; overflow: hidden;
+        background: #fff; box-shadow: 0 4px 14px rgba(75,167,202,.18);
+        page-break-inside: avoid; break-inside: avoid;
+      }
+      .print-photo img{ width: 100%; height: 100%; object-fit: cover; display: block; }
+      .print-title-block{ text-align: center; margin-bottom: 12px; }
+      .print-title-block h2{
+        margin: 8px 0 6px; font-size: 26px; color: #3d8fa8;
+        font-weight: 400; letter-spacing: 1px;
+      }
+      .print-meta-line{ text-align: center; font-size: 13px; color: #5a7384; }
+      .print-chip{
+        display: inline-block; background: rgba(75,167,202,.10); color: #3d8fa8;
+        padding: 3px 10px; border-radius: 999px; margin: 2px;
+      }
+      .print-chip.pink{ background: rgba(255,182,193,.22); color: #c14d63; }
+      .print-section{
+        margin-top: 16px; padding: 14px 16px; border-radius: 18px;
+        background: rgba(255,255,255,.95); border: 1px solid #d9eef5;
+        page-break-inside: avoid; break-inside: avoid;
+      }
+      .print-section h3{
+        margin: 0 0 10px; color: #3d8fa8; font-size: 18px; font-weight: 400;
+        padding-left: 10px; border-left: 5px solid #4ba7ca; letter-spacing: 1px;
+      }
+      .print-ing-grid{ display: grid; grid-template-columns: 1fr 1fr; gap: 6px 16px; }
+      .print-ing{
+        display: flex; align-items: center; gap: 8px; padding: 5px 0;
+        border-bottom: 1px dashed #d9eef5; font-size: 13px;
+      }
+      .print-ing:last-child{ border-bottom: none; }
+      .print-ing-dot{
+        width: 14px; height: 14px; border-radius: 50%;
+        background: linear-gradient(135deg, #ffb6c1, #ff8fa3);
+        flex-shrink: 0;
+      }
+      .print-ing-nm{ flex: 1; font-weight: 600; }
+      .print-ing-qt{ color: #3d8fa8; font-size: 12px; }
+      .print-step{
+        display: flex; gap: 10px; align-items: flex-start;
+        padding: 8px 0; border-bottom: 1px dashed #d9eef5;
+      }
+      .print-step:last-child{ border-bottom: none; }
+      .print-step-n{
+        width: 26px; height: 26px; border-radius: 50%;
+        background: linear-gradient(135deg, #4ba7ca, #3d8fa8);
+        color: #fff; font-weight: 400; font-size: 16px;
+        display: flex; align-items: center; justify-content: center;
+        flex-shrink: 0;
+      }
+      .print-step-t{ flex: 1; font-size: 13px; line-height: 1.7; color: #2d4a5a; }
+      .print-notes{
+        background: linear-gradient(160deg, #fff8f1, #fff0f5);
+        border-radius: 14px; padding: 12px 14px;
+        font-size: 13px; line-height: 1.7; color: #2d4a5a;
+        margin-top: 14px; page-break-inside: avoid;
+      }
+      .print-footer{
+        margin-top: 18px; text-align: center; color: #5a7384; font-size: 11px;
+        border-top: 2px dashed #bfe2ec; padding-top: 10px;
+      }
+      .print-brand{
+        font-family: "Caveat","Long Cang","LXGW WenKai TC", cursive;
+        font-size: 18px; color: #c14d63;
+      }
+    `;
     document.head.appendChild(s);
   }
 
-  // 显示打印预览 modal
-  function showPrintModal(html, title){
+  function waitForPrintImages(){
     return new Promise(resolve=>{
-      ensureStyle();
-      const back = document.createElement('div');
-      back.className = 'print-modal-back';
-      back.innerHTML = `
-        <div class="print-modal">
-          <div class="print-modal-bar">
-            <button class="pm-btn pm-cancel" type="button">关闭</button>
-            <div class="pm-title">打印预览 · ${window.U.escape(title||'')}</div>
-            <button class="pm-btn pm-print" type="button">🖨️ 开始打印</button>
-          </div>
-          <div class="print-modal-body">${html}</div>
-        </div>
-      `;
-      document.body.appendChild(back);
-
-      function close(){
-        back.remove();
-        // 同时移除样式（避免污染）
-        const ss = document.getElementById('print-modal-style');
-        if(ss) ss.remove();
-        resolve();
-      }
-
-      // 等图片加载完
-      waitForImagesIn(back).then(()=>{
-        back.querySelector('.pm-cancel').onclick = close;
-        back.querySelector('.pm-print').onclick = ()=>{
-          try{ window.print(); }catch(e){ window.U.toast('打印失败：'+(e.message||e)); }
-          // 1.5s 后兜底关闭（用户取消打印后）
-          setTimeout(close, 1500);
-        };
-        // 提示用户
-        window.U.toast('预览已就绪，点右上角"开始打印" 🖨️', 3000);
+      const root = document.getElementById('print-root');
+      if(!root){ resolve(); return; }
+      const imgs = Array.from(root.querySelectorAll('img'));
+      if(imgs.length === 0){ resolve(); return; }
+      let pending = imgs.length;
+      let done = false;
+      const finish = ()=>{ if(!done){ done = true; resolve(); } };
+      const tick = ()=>{ if(--pending <= 0) finish(); };
+      imgs.forEach(img=>{
+        if(img.complete && img.naturalWidth>0){ tick(); return; }
+        img.addEventListener('load', tick, { once:true });
+        img.addEventListener('error', tick, { once:true });
       });
+      setTimeout(finish, 10000);
     });
+  }
+
+  function cleanup(){
+    document.body.classList.remove('printing');
+    const root = document.getElementById('print-root');
+    if(root) root.remove();
+    const st = document.getElementById('print-style');
+    if(st) st.remove();
   }
 
   async function printRecipe(r){
     window.U.toast('正在准备打印页…');
-    const html = await buildPrintHTML(r);
-    await showPrintModal(html, r.name);
+    // 先清理旧的 print-root（保留 style 块）
+    const old = document.getElementById('print-root');
+    if(old) old.remove();
+    // 再注入/确保 style
+    ensureStyle();
+
+    const root = document.createElement('div');
+    root.id = 'print-root';
+    root.innerHTML = `
+      <div class="print-toolbar">
+        <button class="pt-btn pt-close" type="button">✕ 关闭</button>
+        <div class="pt-title">打印预览 · ${window.U.escape(r.name||'')}</div>
+        <button class="pt-btn pt-print" type="button">🖨️ 开始打印</button>
+      </div>
+      ${await buildPrintHTML(r)}
+    `;
+    document.body.appendChild(root);
+
+    // 等图片加载完
+    await waitForPrintImages();
+
+    // 关闭按钮
+    root.querySelector('.pt-close').onclick = ()=>{
+      cleanup();
+    };
+
+    // 打印按钮
+    root.querySelector('.pt-print').onclick = ()=>{
+      window.U.toast('正在打开系统打印面板…');
+      try{
+        document.body.classList.add('printing');
+        // 给浏览器一点时间应用 print 样式
+        setTimeout(()=>{ window.print(); }, 50);
+      }catch(e){ window.U.toast('打印失败：'+(e.message||e)); }
+    };
+
+    // 监听 afterprint 自动清理
+    const onAfter = ()=>{
+      document.body.classList.remove('printing');
+      cleanup();
+      window.removeEventListener('afterprint', onAfter);
+    };
+    window.addEventListener('afterprint', onAfter);
+
+    window.U.toast('预览已就绪，点右上"开始打印" 🖨️', 3000);
   }
 
-  window.PrintAPI = { printRecipe, buildPrintHTML, renderPhotosHTML, pickColumns };
+  window.PrintAPI = { printRecipe, buildPrintHTML, renderPhotosHTML, pickColumns, cleanup };
 })();
