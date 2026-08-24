@@ -3,6 +3,37 @@
    ============================================ */
 (function(){
 
+  // 根据照片数量选择合适的列数
+  // 1张=全宽，2-4张=2列，5-9张=3列，10-16=4列，17+ = 4 列 分组
+  function pickColumns(n){
+    if(n <= 1) return 1;
+    if(n <= 4) return 2;
+    if(n <= 9) return 3;
+    return 4;
+  }
+
+  // 渲染所有照片：按列数和分组渲染，确保每一张都被渲染
+  function renderPhotosHTML(photoData){
+    if(!photoData || !photoData.length) return '';
+    const total = photoData.length;
+    const cols = pickColumns(total);
+    const perPage = Math.max(6, cols * 3); // 每 6-12 张一组，避免一页塞太满
+    const groups = [];
+    for(let i=0;i<total;i+=perPage){
+      groups.push(photoData.slice(i, i+perPage));
+    }
+    return groups.map((g, gi)=>{
+      const realCols = pickColumns(g.length);
+      return `
+        <div class="photo-group">
+          <div class="photos-grid n${realCols}">
+            ${g.map(u=>`<div class="photo"><img src="${window.U.escape(u)}" loading="eager" decoding="async"/></div>`).join('')}
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+
   async function buildPrintHTML(r){
     const photos = await DB.getPhotosForRecipe(r.id);
     const cat = window.U.getCategory(r.category);
@@ -35,17 +66,29 @@
     background: linear-gradient(180deg, #f4faff 0%, #fff7f9 100%);
   }
   .photos-grid{
-    display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px;
+    display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px;
     margin-bottom: 18px;
-    page-break-inside: avoid;
   }
-  .photos-grid.cols-1{grid-template-columns:1fr;}
-  .photos-grid.cols-3{grid-template-columns:repeat(3,1fr);}
+  .photos-grid.n1{grid-template-columns:1fr;}
+  .photos-grid.n2{grid-template-columns:repeat(2,1fr);}
+  .photos-grid.n3{grid-template-columns:repeat(3,1fr);}
+  .photos-grid.n4{grid-template-columns:repeat(4,1fr);}
+  .photos-grid.n5{grid-template-columns:repeat(5,1fr);}
+  .photos-grid.n6{grid-template-columns:repeat(6,1fr);}
   .photo{
-    width: 100%; aspect-ratio: 1/1; border-radius: 16px; overflow: hidden;
+    width: 100%; aspect-ratio: 1/1; border-radius: 14px; overflow: hidden;
     box-shadow: 0 4px 14px rgba(75,167,202,.18);
+    background:#fff;
+    page-break-inside: avoid;
+    break-inside: avoid;
   }
   .photo img{width:100%;height:100%;object-fit:cover;display:block;}
+  /* 大量照片时按页分组：每 6 张一组（单列3列2行 / 6列1行 均可） */
+  .photo-group{
+    margin-bottom: 12px;
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
 
   .title-block{
     text-align: center;
@@ -135,11 +178,7 @@
 </head>
 <body>
 <div class="sheet">
-  ${photoData.length ? `
-    <div class="photos-grid ${photoData.length===1?'cols-1':photoData.length>=3?'cols-3':''}">
-      ${photoData.map(u=>`<div class="photo"><img src="${window.U.escape(u)}"/></div>`).join('')}
-    </div>
-  ` : ''}
+  ${renderPhotosHTML(photoData)}
 
   <div class="title-block">
     <h2>${window.U.escape(r.name)}</h2>
@@ -194,27 +233,65 @@
 </body></html>`;
   }
 
+  // 等所有图片加载完成（promise 化）
+  function waitForImagesIn(win){
+    return new Promise(resolve=>{
+      try{
+        const imgs = Array.from(win.document.images || []);
+        if(imgs.length === 0){ resolve(); return; }
+        let pending = imgs.length;
+        let done = false;
+        const finish = ()=>{ if(!done){ done = true; resolve(); } };
+        const tick = ()=>{ if(--pending <= 0) finish(); };
+        imgs.forEach(img=>{
+          if(img.complete && img.naturalWidth>0){ tick(); return; }
+          img.addEventListener('load', tick, { once:true });
+          img.addEventListener('error', tick, { once:true });
+        });
+        // 兜底：最多等 8 秒
+        setTimeout(finish, 8000);
+      }catch(e){ resolve(); }
+    });
+  }
+
+  // 把 HTML 注入到一个 target window 并等待所有图片加载完成，再触发打印
+  async function injectAndWait(targetDoc, targetWin, html){
+    targetDoc.open();
+    targetDoc.write(html);
+    targetDoc.close();
+    // 等 DOM 完成解析
+    await new Promise(res=>{
+      if(targetDoc.readyState === 'complete') return res();
+      targetWin.addEventListener('load', res, { once:true });
+      setTimeout(res, 500);
+    });
+    await waitForImagesIn(targetWin);
+  }
+
   async function printRecipe(r){
+    window.U.toast('正在准备打印页…');
     const html = await buildPrintHTML(r);
     const w = window.open('', '_blank');
     if(!w){
       // iOS Safari 不能开新窗口 → 退化为 iframe
       const iframe = document.createElement('iframe');
       iframe.style.position='fixed'; iframe.style.right='-9999px'; iframe.style.width='0'; iframe.style.height='0';
+      iframe.style.border='0';
       document.body.appendChild(iframe);
       const idoc = iframe.contentDocument || iframe.contentWindow.document;
-      idoc.open(); idoc.write(html); idoc.close();
-      iframe.contentWindow.focus();
-      setTimeout(()=>{ try{ iframe.contentWindow.print(); }catch(e){ toast('请允许弹窗以打印'); } }, 600);
+      // 必须先 src 设个 about:blank，然后用 document.write
+      iframe.src = 'about:blank';
+      await new Promise(res=>{ iframe.onload = res; setTimeout(res, 200); });
+      await injectAndWait(idoc, iframe.contentWindow, html);
+      try{ iframe.contentWindow.focus(); iframe.contentWindow.print(); }catch(e){ window.U.toast('请允许弹窗以打印'); }
+      setTimeout(()=>iframe.remove(), 30000);
+      window.U.toast('打印已发送 ✅');
       return;
     }
-    w.document.open();
-    w.document.write(html);
-    w.document.close();
-    setTimeout(()=>{
-      try{ w.focus(); w.print(); }catch(e){}
-    }, 700);
+    await injectAndWait(w.document, w, html);
+    try{ w.focus(); w.print(); }catch(e){}
+    window.U.toast('打印已发送 ✅');
   }
 
-  window.PrintAPI = { printRecipe, buildPrintHTML };
+  window.PrintAPI = { printRecipe, buildPrintHTML, renderPhotosHTML, pickColumns };
 })();

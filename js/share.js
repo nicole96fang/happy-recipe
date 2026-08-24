@@ -13,7 +13,7 @@
 
   async function sharePDF(r){
     if(typeof window.jspdf === 'undefined'){
-      toast('PDF 引擎加载中，请稍后再试');
+      window.U.toast('PDF 引擎加载中，请稍后再试');
       return;
     }
     const { jsPDF } = window.jspdf;
@@ -51,27 +51,29 @@
       y += 6;
     } else y += 2;
 
-    // 照片
+    // 照片 - 自适应列数：1=1列, 2-4=2列, 5+=3列
     const photos = await DB.getPhotosForRecipe(r.id);
     const photoDataUrls = [];
     for(const p of photos){ try{ photoDataUrls.push(await blobToDataURL(p.blob)); }catch(e){} }
 
     if(photoDataUrls.length){
-      const colW = (pageW - M*2 - 6) / 2;
+      const cols = photoDataUrls.length <= 1 ? 1 : (photoDataUrls.length <= 4 ? 2 : 3);
+      const gap = 5;
+      const colW = (pageW - M*2 - (cols-1)*gap) / cols;
       let px = M, py = y + 2; let col = 0;
       for(let i=0;i<photoDataUrls.length;i++){
         const size = colW;
         if(py + size > pageH - 30){
-          doc.addPage(); y = M; px = M; py = M; col = 0;
+          doc.addPage(); px = M; py = M; col = 0;
         }
         try{ doc.addImage(photoDataUrls[i], 'JPEG', px, py, size, size, undefined, 'FAST'); }catch(e){
           try{ doc.addImage(photoDataUrls[i], 'PNG', px, py, size, size, undefined, 'FAST'); }catch(e2){}
         }
         col++;
-        if(col===2){ col=0; px=M; py += size + 6; }
-        else { px += colW + 6; }
+        if(col>=cols){ col=0; px=M; py += size + gap; }
+        else { px += colW + gap; }
       }
-      if(col===1) y = py + size + 8;
+      if(col>0) y = py + size + 4;
       else y = py + 4;
     }
 
@@ -152,7 +154,7 @@
         const file = new File([blob], filename, { type:'application/pdf' });
         try{
           await navigator.share({ files:[file], title:r.name, text:'来自幸福食谱的分享 🍯' });
-          toast('已分享 ✅');
+          window.U.toast('已分享 ✅');
           return;
         }catch(e){ /* fall through */ }
       }
@@ -162,10 +164,10 @@
       a.href = url; a.download = filename;
       document.body.appendChild(a); a.click(); a.remove();
       setTimeout(()=>URL.revokeObjectURL(url), 60000);
-      toast('PDF 已下载到本地 ✅');
+      window.U.toast('PDF 已下载到本地 ✅');
     }catch(e){
       console.warn(e);
-      toast('生成 PDF 失败：'+ (e.message||e));
+      window.U.toast('生成 PDF 失败：'+ (e.message||e));
     }
   }
 
