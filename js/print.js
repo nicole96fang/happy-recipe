@@ -53,8 +53,6 @@
 
     return `
 <div class="print-sheet">
-  ${renderPhotosHTML(photoData)}
-
   <div class="print-title-block">
     <h2>${window.U.escape(r.name)}</h2>
     <div class="print-meta-line">
@@ -95,6 +93,13 @@
   ` : ''}
 
   ${r.notes ? `<div class="print-notes"><strong>📝 小笔记：</strong><br/>${window.U.escape(r.notes).replace(/\n/g,'<br/>')}</div>` : ''}
+
+  ${photoData.length ? `
+    <div class="print-section print-photos-section">
+      <h3>📸 成品 Gallery · ${photoData.length} 张</h3>
+      ${renderPhotosHTML(photoData)}
+    </div>
+  ` : ''}
 
   <div class="print-footer">
     <div class="print-brand">made with love · ${new Date().toLocaleDateString()}</div>
@@ -177,7 +182,8 @@
         color: #2d4a5a;
         box-sizing: border-box;
       }
-      .print-photo-group{ margin-bottom: 12px; page-break-inside: avoid; break-inside: avoid; }
+      .print-photo-group{ page-break-inside: avoid; break-inside: avoid; }
+      .print-photos-section .print-photo-group:last-child{ margin-bottom: 0; }
       .print-photo-grid{ display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
       .print-photo-grid.print-n1{ grid-template-columns: 1fr; }
       .print-photo-grid.print-n2{ grid-template-columns: repeat(2, 1fr); }

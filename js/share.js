@@ -51,35 +51,14 @@
       y += 6;
     } else y += 2;
 
-    // 照片 - 自适应列数：1=1列, 2-4=2列, 5+=3列
-    const photos = await DB.getPhotosForRecipe(r.id);
-    const photoDataUrls = [];
-    for(const p of photos){ try{ photoDataUrls.push(await blobToDataURL(p.blob)); }catch(e){} }
-
-    if(photoDataUrls.length){
-      const cols = photoDataUrls.length <= 1 ? 1 : (photoDataUrls.length <= 4 ? 2 : 3);
-      const gap = 5;
-      const colW = (pageW - M*2 - (cols-1)*gap) / cols;
-      let px = M, py = y + 2; let col = 0;
-      for(let i=0;i<photoDataUrls.length;i++){
-        const size = colW;
-        if(py + size > pageH - 30){
-          doc.addPage(); px = M; py = M; col = 0;
-        }
-        try{ doc.addImage(photoDataUrls[i], 'JPEG', px, py, size, size, undefined, 'FAST'); }catch(e){
-          try{ doc.addImage(photoDataUrls[i], 'PNG', px, py, size, size, undefined, 'FAST'); }catch(e2){}
-        }
-        col++;
-        if(col>=cols){ col=0; px=M; py += size + gap; }
-        else { px += colW + gap; }
-      }
-      if(col>0) y = py + size + 4;
-      else y = py + 4;
-    }
-
     if(y < 40) y = 40;
     // 检查是否新页
     if(y > pageH - 60){ doc.addPage(); y = M; }
+
+    // 准备照片数据
+    const photos = await DB.getPhotosForRecipe(r.id);
+    const photoDataUrls = [];
+    for(const p of photos){ try{ photoDataUrls.push(await blobToDataURL(p.blob)); }catch(e){} }
 
     // 食材
     if(r.ingredients && r.ingredients.length){
@@ -137,6 +116,31 @@
       doc.setFontSize(11); doc.setTextColor(45, 74, 90);
       doc.text(lines, M, y);
       y += lines.length * 6 + 6;
+    }
+
+    // 照片画廊 - 放在最后（成品展示）
+    if(photoDataUrls && photoDataUrls.length){
+      if(y > pageH - 50){ doc.addPage(); y = M; }
+      drawSectionTitle(doc, '📸 成品 Gallery · ' + photoDataUrls.length + ' 张', M, y);
+      y += 8;
+      const cols = photoDataUrls.length <= 1 ? 1 : (photoDataUrls.length <= 4 ? 2 : 3);
+      const gap = 5;
+      const colW = (pageW - M*2 - (cols-1)*gap) / cols;
+      let px = M, py = y; let col = 0;
+      const size = colW;
+      for(let i=0;i<photoDataUrls.length;i++){
+        if(py + size > pageH - 20){
+          doc.addPage(); px = M; py = M; col = 0;
+        }
+        try{ doc.addImage(photoDataUrls[i], 'JPEG', px, py, size, size, undefined, 'FAST'); }catch(e){
+          try{ doc.addImage(photoDataUrls[i], 'PNG', px, py, size, size, undefined, 'FAST'); }catch(e2){}
+        }
+        col++;
+        if(col>=cols){ col=0; px=M; py += size + gap; }
+        else { px += colW + gap; }
+      }
+      if(col>0) y = py + size + 4;
+      else y = py + 4;
     }
 
     // 页脚
