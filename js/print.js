@@ -34,23 +34,6 @@
     padding: 22px 26px;
     background: linear-gradient(180deg, #f4faff 0%, #fff7f9 100%);
   }
-  .header{
-    text-align: center;
-    padding-bottom: 14px;
-    border-bottom: 2px dashed #bfe2ec;
-    margin-bottom: 18px;
-  }
-  .header h1{
-    margin: 0;
-    font-size: 32px;
-    color: #3d8fa8;
-    letter-spacing: 1px;
-  }
-  .header .sub{
-    margin-top: 6px;
-    color: #5a7384;
-    font-size: 13px;
-  }
   .photos-grid{
     display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px;
     margin-bottom: 18px;
@@ -152,12 +135,6 @@
 </head>
 <body>
 <div class="sheet">
-  <div class="header">
-    <div style="font-size:30px;">🍯</div>
-    <h1>幸福食谱</h1>
-    <div class="sub">Happy Recipe · 用心记录每一餐</div>
-  </div>
-
   ${photoData.length ? `
     <div class="photos-grid ${photoData.length===1?'cols-1':photoData.length>=3?'cols-3':''}">
       ${photoData.map(u=>`<div class="photo"><img src="${window.U.escape(u)}"/></div>`).join('')}
