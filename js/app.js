@@ -13,10 +13,35 @@
   // 首次种子
   try{ await window.Seed.seedIfEmpty(); }catch(e){ console.warn(e); }
 
-  // SW 注册 (可选)
+  // SW 注册 + 自动升级提示
   if('serviceWorker' in navigator){
     try{
-      navigator.serviceWorker.register('sw.js').catch(()=>{});
+      navigator.serviceWorker.register('sw.js').then(reg => {
+        // 1) 监听新 SW 等待激活
+        function promptRefresh(worker){
+          if(!worker) return;
+          worker.addEventListener('statechange', ()=>{
+            if(worker.state === 'activated' && navigator.serviceWorker.controller){
+              // 新 SW 激活成功 → 提示用户刷新一次
+              window.U.toast('🍯 新版本已就绪，正在刷新…', 1800);
+              setTimeout(()=> location.reload(), 1200);
+            }
+          });
+        }
+        if(reg.waiting) promptRefresh(reg.waiting);
+        reg.addEventListener('updatefound', () => {
+          const sw = reg.installing;
+          if(sw) promptRefresh(sw);
+        });
+
+        // 2) 每 60 秒检查一次更新
+        setInterval(()=> reg.update().catch(()=>{}), 60000);
+      }).catch(()=>{});
+
+      // 3) 第一次进入时如果 SW 接管了页面（重新加载后），可选择性跳过
+      navigator.serviceWorker.addEventListener('controllerchange', ()=>{
+        // 让新 SW 立即生效
+      });
     }catch(e){}
   }
 
