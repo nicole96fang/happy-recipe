@@ -25,8 +25,9 @@
   --shadow-mid:  0 12px 36px rgba(75,167,202,.18), 0 4px 12px rgba(255,182,193,.15);
   --shadow-pop:  0 18px 50px rgba(75,167,202,.25), 0 6px 18px rgba(255,182,193,.25);
 
-  --font: -apple-system, BlinkMacSystemFont, "PingFang SC","Helvetica Neue","Hiragino Sans GB","Microsoft YaHei", system-ui, sans-serif, "Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji";
-  --font-script: "Bradley Hand","Snell Roundhand","Comic Sans MS", cursive;
+  --font: "LXGW WenKai TC","LXGW WenKai","霞鹜文楷","PingFang SC","Hiragino Sans GB","Microsoft YaHei", system-ui, -apple-system, BlinkMacSystemFont, sans-serif, "Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji";
+  --font-script: "Long Cang","Pacifico","Caveat","Bradley Hand","Snell Roundhand","Comic Sans MS", cursive;
+  --font-display: "Long Cang","Caveat","LXGW WenKai TC","PingFang SC", cursive;
 }
 
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
@@ -125,8 +126,10 @@ body{
   border-bottom:1px solid rgba(75,167,202,.15);
 }
 .topbar .brand{
-  flex:1;display:flex;align-items:center;gap:10px;font-weight:800;font-size:20px;color:var(--c-blue-deep);
-  letter-spacing:.5px;
+  flex:1;display:flex;align-items:center;gap:10px;
+  font-family:var(--font-display);
+  font-weight:400;font-size:24px;color:var(--c-blue-deep);
+  letter-spacing:2px;
 }
 .topbar .brand .logo{
   width:42px;height:42px;border-radius:50%;
@@ -153,11 +156,14 @@ body{
    ============================================ */
 .btn{
   display:inline-flex;align-items:center;justify-content:center;gap:8px;
-  border:none;cursor:pointer;font-family:inherit;font-weight:700;
+  border:none;cursor:pointer;
+  font-family: var(--font-display);
+  font-weight:400;
   transition:transform .15s ease, box-shadow .2s ease, background .2s;
   border-radius:999px;
   padding:14px 26px;
-  font-size:15px;
+  font-size:16px;
+  letter-spacing:2px;
   box-shadow:var(--shadow-soft);
 }
 .btn:active{transform:scale(.96);}
@@ -189,23 +195,27 @@ body{
 }
 .hero h1{
   margin:0;
-  font-size:38px;font-weight:800;
+  font-family: var(--font-display);
+  font-weight:400;
+  font-size:54px;
   background:linear-gradient(135deg, var(--c-blue-deep), var(--c-pink-deep));
   -webkit-background-clip:text;background-clip:text;color:transparent;
-  letter-spacing:1px;
+  letter-spacing:6px;
+  line-height:1.1;
 }
 .hero .sub{
-  margin-top:8px;color:var(--c-ink-soft);font-size:14px;
+  margin-top:12px;color:var(--c-ink-soft);font-size:14px;
 }
 .hero .ornament{
   margin:14px auto 6px;display:block;
   font-size:22px;letter-spacing:6px;
 }
 .hero .script{
-  font-family:var(--font-script);
-  font-size:22px;
+  font-family: var(--font-script);
+  font-size:26px;
   color:var(--c-pink-deep);
-  margin-top:4px;
+  margin-top:6px;
+  letter-spacing:1px;
 }
 
 /* ============================================
@@ -306,7 +316,7 @@ body{
   box-shadow:var(--shadow-soft);
 }
 .cat-header .info{flex:1;}
-.cat-header h2{margin:0;font-size:26px;color:var(--c-blue-deep);}
+.cat-header h2{margin:0;font-size:32px;color:var(--c-blue-deep);font-family:var(--font-display);font-weight:400;letter-spacing:2px;}
 .cat-header .meta{font-size:13px;color:var(--c-ink-soft);margin-top:2px;}
 
 .back-btn{
@@ -403,7 +413,11 @@ body{
 .recipe-page .photo.add:hover{background:linear-gradient(135deg, var(--c-blue-light), var(--c-pink-light));}
 .recipe-page .photo.add input{display:none;}
 .recipe-page h1{
-  margin:6px 0 6px;font-size:24px;color:var(--c-blue-deep);
+  margin:6px 0 6px;
+  font-family:var(--font-display);
+  font-size:32px;color:var(--c-blue-deep);
+  font-weight:400;letter-spacing:1.5px;
+  line-height:1.15;
 }
 .recipe-page .recipe-meta{
   display:flex;flex-wrap:wrap;gap:8px;font-size:12px;color:var(--c-ink-soft);
@@ -416,15 +430,17 @@ body{
 
 .section-title{
   display:flex;align-items:center;gap:8px;
-  font-size:18px;font-weight:800;color:var(--c-blue-deep);
+  font-family:var(--font-display);
+  font-size:22px;font-weight:400;color:var(--c-blue-deep);
   margin:22px 0 10px;
   position:relative;padding-left:14px;
+  letter-spacing:1.5px;
 }
 .section-title::before{
   content:"";position:absolute;left:0;top:6px;bottom:6px;width:5px;border-radius:4px;
   background:linear-gradient(180deg, var(--c-blue), var(--c-pink));
 }
-.section-title .script{font-family:var(--font-script);color:var(--c-pink-deep);font-size:22px;}
+.section-title .script{font-family:var(--font-script);color:var(--c-pink-deep);font-size:24px;}
 
 /* 食材 */
 .ing-list{
@@ -440,11 +456,14 @@ body{
 }
 .ing-row:last-child{border-bottom:none;}
 .ing-row .dot{
-  width:18px;height:18px;border-radius:50%;
+  width:22px;height:22px;border-radius:50%;
   background:linear-gradient(135deg, var(--c-pink), var(--c-pink-deep));
   flex-shrink:0;
-  display:flex;align-items:center;justify-content:center;font-size:9px;color:#fff;
+  display:flex;align-items:center;justify-content:center;
+  font-family:var(--font-display);
+  font-size:14px;color:#fff;
   box-shadow:0 2px 4px rgba(255,143,163,.35);
+  font-weight:400;
 }
 .ing-row .name{flex:1;color:var(--c-ink);font-weight:600;}
 .ing-row .qty{color:var(--c-blue-deep);font-weight:600;font-size:13px;background:rgba(75,167,202,.10);padding:3px 10px;border-radius:999px;}
@@ -463,7 +482,7 @@ body{
   flex-shrink:0;
   width:42px;height:42px;border-radius:50%;
   background:linear-gradient(135deg, var(--c-blue), var(--c-blue-deep));
-  color:#fff;font-weight:800;font-size:18px;
+  color:#fff;font-family:var(--font-display);font-weight:400;font-size:22px;
   display:flex;align-items:center;justify-content:center;
   box-shadow:0 4px 10px rgba(75,167,202,.35);
 }
@@ -535,7 +554,7 @@ body{
   width:48px;height:5px;background:var(--c-line);border-radius:99px;
   margin:0 auto 14px;
 }
-.sheet h3{margin:0 0 14px;color:var(--c-blue-deep);font-size:19px;}
+.sheet h3{margin:0 0 14px;color:var(--c-blue-deep);font-size:22px;font-family:var(--font-display);font-weight:400;letter-spacing:1.5px;}
 .sheet .opts{display:flex;flex-direction:column;gap:8px;}
 .sheet .opt-btn{
   display:flex;align-items:center;gap:12px;
