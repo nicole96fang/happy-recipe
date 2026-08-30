@@ -11,6 +11,7 @@
     { id:'鱿鱼', emoji:'🦑', color:'#bfe2ec' },
     { id:'螃蟹', emoji:'🦀', color:'#ffb6c1' },
     { id:'蚌类', emoji:'🐚', color:'#bfe2ec' },
+    { id:'饭类', emoji:'🍚', color:'#bfe2ec' },
     { id:'蔬菜', emoji:'🥬', color:'#a8e6cf' },
     { id:'豆腐', emoji:'🟫', color:'#ffe9b0' },
     { id:'鸡蛋', emoji:'🥚', color:'#fff0b0' },
